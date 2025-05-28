@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFSC Code Finder</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+
+        .search-container {
+            display: flex;
+            margin: 30px 0;
+        }
+
+        input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 50px 0 0 50px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 0 50px 50px 0;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5a67d8;
+        }
+
+        #result {
+            margin-top: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+            text-align: left;
+        }
+
+        .result-item {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            width: 150px;
+            color: #555;
+        }
+
+        .loader {
+            display: none;
+            width: 50px;
+            height: 50px;
+            margin: 20px auto;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .search-container {
+                flex-direction: column;
+            }
+            
+            input, button {
+                border-radius: 50px;
+                width: 100%;
+            }
+            
+            input {
+                margin-bottom: 10px;
+            }
+            
+            .result-item {
+                flex-direction: column;
+            }
+            
+            .result-label {
+                margin-bottom: 5px;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 IFSC Code Finder</h1>
+        <p>Find bank details using Indian Financial System Code (IFSC)</p>
+        <div class="search-container">
+            <input type="text" id="ifscInput" placeholder="Enter 11-digit IFSC Code" maxlength="11">
+            <button type="button" id="searchBtn">Search</button>
+        </div>
+        <div class="loader" id="loader"></div>
+        <div class="error" id="error"></div>
+        <div id="result">
+            <div class="result-item">
+                <div class="result-label">Bank Name:</div>
+                <div id="bankName">-</div>
+            </div>
+            <div class="result-item">
+                <div class="result-label">Branch:</div>
+                <div id="branch">-</div>
+            </div>
+            <div class="result-item">
+                <div class="result-label">Address:</div>
+                <div id="address">-</div>
+            </div>
+            <div class="result-item">
+                <div class="result-label">City:</div>
+                <div id="city">-</div>
+            </div>
+            <div class="result-item">
+                <div class="result-label">District:</div>
+                <div id="district">-</div>
+            </div>
+            <div class="result-item">
+                <div class="result-label">State:</div>
+                <div id="state">-</div>
+            </div>
+            <div class="result-item">
+                <div class="result-label">IFSC Code:</div>
+                <div id="ifsc">-</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchBtn = document.getElementById('searchBtn');
+            const ifscInput = document.getElementById('ifscInput');
+            const resultDiv = document.getElementById('result');
+            const loader = document.getElementById('loader');
+            const errorDiv = document.getElementById('error');
+            
+            // Elements for displaying results
+            const bankName = document.getElementById('bankName');
+            const branch = document.getElementById('branch');
+            const address = document.getElementById('address');
+            const city = document.getElementById('city');
+            const district = document.getElementById('district');
+            const state = document.getElementById('state');
+            const ifsc = document.getElementById('ifsc');
+            
+            searchBtn.addEventListener('click', searchIFSC);
+            ifscInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') searchIFSC();
+            });
+            
+            function searchIFSC() {
+                const code = ifscInput.value.trim().toUpperCase();
+                
+                // Basic validation
+                if (!code) {
+                    showError('Please enter an IFSC code');
+                    return;
+                }
+                
+                if (code.length !== 11) {
+                    showError('IFSC code must be 11 characters long');
+                    return;
+                }
+                
+                // Show loader, hide previous results and errors
+                loader.style.display = 'block';
+                resultDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                
+                // Call backend API
+                fetch(`/ifsc?code=${code}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Bank details not found');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        displayResults(data);
+                    })
+                    .catch(err => {
+                        showError(err.message || 'An error occurred. Please try again.');
+                    })
+                    .finally(() => {
+                        loader.style.display = 'none';
+                    });
+            }
+            
+            function displayResults(data) {
+                bankName.textContent = data.BANK || 'N/A';
+                branch.textContent = data.BRANCH || 'N/A';
+                address.textContent = data.ADDRESS || 'N/A';
+                city.textContent = data.CITY || 'N/A';
+                district.textContent = data.DISTRICT || 'N/A';
+                state.textContent = data.STATE || 'N/A';
+                ifsc.textContent = data.IFSC || 'N/A';
+                
+                resultDiv.style.display = 'block';
+            }
+            
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                resultDiv.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
